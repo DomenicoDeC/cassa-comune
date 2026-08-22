@@ -440,7 +440,51 @@
             </div>
         </div>
 
-        <!-- Modal 5: Importa Viaggio (JSON) -->
+        <!-- Modal 5: Condivisione Cloud -->
+        <div id="modal-share" class="modal-overlay">
+            <div class="modal-card glass animate-slide-up">
+                <div class="modal-header">
+                    <h3>Condividi Viaggio</h3>
+                    <button class="btn-close-modal"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <div id="share-status" class="share-status">
+                    <span class="spinner"></span> Caricamento dati in corso...
+                </div>
+                <div id="share-content" style="display:none;">
+                    <p class="sub-text mb-4">
+                        <i class="fa-solid fa-circle-info text-info"></i>
+                        Invia questo link ai partecipanti. Aprendo il link, l'app caricherà automaticamente il viaggio condiviso.
+                    </p>
+                    <label class="form-group" style="gap:0.5rem; margin-bottom:1rem;">
+                        <span style="font-size:0.85rem; color:var(--color-text-secondary); font-weight:500;">Link di Invito</span>
+                        <div class="share-link-box">
+                            <input type="text" id="share-link-input" readonly>
+                            <button class="btn-icon" id="btn-copy-link" title="Copia link">
+                                <i class="fa-solid fa-copy"></i>
+                            </button>
+                        </div>
+                    </label>
+                    <div class="share-qr">
+                        <img id="share-qr-img" src="" alt="QR Code">
+                    </div>
+                    <div class="share-actions">
+                        <button class="btn btn-success" id="btn-share-whatsapp">
+                            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                        </button>
+                        <button class="btn btn-primary" id="btn-share-native">
+                            <i class="fa-solid fa-share-nodes"></i> Condividi
+                        </button>
+                    </div>
+                    <div style="margin-top:1rem; border-top:1px solid var(--glass-border); padding-top:1rem;">
+                        <button class="btn btn-secondary" id="btn-sync-update" style="width:100%;">
+                            <i class="fa-solid fa-arrows-rotate"></i> Aggiorna dati nel cloud
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal 6: Importa Viaggio (JSON) -->
         <div id="modal-import" class="modal-overlay">
             <div class="modal-card glass animate-slide-up">
                 <div class="modal-header">
