@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cassa Comune - Spese di Viaggio</title>
+    <meta name="description" content="Gestisci e dividi le spese del tuo viaggio in modo semplice e ottimizzato.">
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Tesseract.js OCR Library for Receipt Scanning -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app" class="app-container">
+        
+        <!-- Welcome Screen (shown when no trip is active) -->
+        <div id="welcome-screen" class="view-screen active">
+            <div class="welcome-card glass">
+                <div class="logo-area">
+                    <div class="logo-icon"><i class="fa-solid fa-plane-departure"></i></div>
+                    <h1>Cassa Comune</h1>
+                    <p class="subtitle">Condividi le spese di viaggio senza pensieri</p>
+                </div>
+                <div class="welcome-actions">
+                    <button id="btn-new-trip" class="btn btn-primary btn-large">
+                        <i class="fa-solid fa-plus"></i> Nuovo Viaggio
+                    </button>
+                    <button id="btn-import-trip" class="btn btn-secondary btn-large">
+                        <i class="fa-solid fa-file-import"></i> Importa Viaggio
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App Screen (shown when a trip is active) -->
+        <div id="main-screen" class="view-screen">
+            <!-- Header -->
+            <header class="app-header glass">
+                <div class="header-left">
+                    <span class="trip-icon"><i class="fa-solid fa-earth-americas"></i></span>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <h2 id="trip-title-display">Il Mio Viaggio</h2>
+                            <button id="btn-share-trip" class="btn-icon" title="Condividi Viaggio" style="width: 30px; height: 30px; border-radius: 50%; font-size: 0.8rem; background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.2); color: var(--primary);">
+                                <i class="fa-solid fa-share-nodes"></i>
+                            </button>
+                        </div>
+                        <span id="trip-dates-display" class="sub-text">In corso</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button id="btn-trip-settings" class="btn-icon" title="Impostazioni Viaggio">
+                        <i class="fa-solid fa-cog"></i>
+                    </button>
+                    <button id="btn-export" class="btn-icon" title="Esporta Dati (Condividi)">
+                        <i class="fa-solid fa-download"></i>
+                    </button>
+                    <button id="btn-close-trip" class="btn-icon text-danger" title="Chiudi Viaggio">
+                        <i class="fa-solid fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main class="app-content">
+                
+                <!-- View 1: Dashboard -->
+                <section id="view-dashboard" class="content-section active">
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card glass">
+                            <div class="stat-icon icon-blue"><i class="fa-solid fa-wallet"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Spesa Totale</span>
+                                <h3 id="stat-total-spent">0,00 €</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card glass">
+                            <div class="stat-icon icon-green"><i class="fa-solid fa-piggy-bank"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Cassa Comune</span>
+                                <h3 id="stat-pot-balance">0,00 €</h3>
+                                <span id="stat-pot-total-contrib" class="sub-text">Contributi: 0,00 €</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass">
+                            <div class="stat-icon icon-purple"><i class="fa-solid fa-users"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Partecipanti</span>
+                                <h3 id="stat-participants-count">0</h3>
+                                <span id="stat-avg-spent" class="sub-text">Media: 0,00 € / persona</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts & Recent Activity -->
+                    <div class="dashboard-grid">
+                        <!-- Chart Card -->
+                        <div class="card glass chart-card">
+                            <h3>Suddivisione Spese</h3>
+                            <div class="chart-container">
+                                <canvas id="chart-categories"></canvas>
+                            </div>
+                        </div>
+                        <!-- Recent Transactions -->
+                        <div class="card glass activity-card">
+                            <div class="card-header">
+                                <h3>Attività Recente</h3>
+                                <button id="btn-view-all-transactions" class="btn-link">Vedi tutte</button>
+                            </div>
+                            <div class="transactions-list-mini" id="mini-transactions-list">
+                                <div class="empty-state">
+                                    <i class="fa-solid fa-receipt"></i>
+                                    <p>Nessuna transazione registrata.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View 2: Spese ed Entrate -->
+                <section id="view-transactions" class="content-section">
+                    <div class="section-header">
+                        <h2>Transazioni</h2>
+                        <div class="header-actions">
+                            <button id="btn-add-expense" class="btn btn-primary">
+                                <i class="fa-solid fa-minus-circle"></i> Spesa
+                            </button>
+                            <button id="btn-add-income" class="btn btn-success">
+                                <i class="fa-solid fa-plus-circle"></i> Entrata Cassa
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="filters-bar glass">
+                        <div class="search-input">
+                            <i class="fa-solid fa-search"></i>
+                            <input type="text" id="search-transaction" placeholder="Cerca transazione...">
+                        </div>
+                        <select id="filter-type">
+                            <option value="all">Tutte le transazioni</option>
+                            <option value="expense">Solo Uscite (Spese)</option>
+                            <option value="income">Solo Entrate (Cassa)</option>
+                        </select>
+                        <select id="filter-category">
+                            <option value="all">Tutte le categorie</option>
+                            <option value="Cibo">Cibo</option>
+                            <option value="Alloggio">Alloggio</option>
+                            <option value="Trasporti">Trasporti</option>
+                            <option value="Svago">Svago</option>
+                            <option value="Altro">Altro</option>
+                        </select>
+                    </div>
+
+                    <!-- Transactions List -->
+                    <div class="card glass scrollable-card">
+                        <div class="transactions-list" id="main-transactions-list">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View 3: Partecipanti -->
+                <section id="view-participants" class="content-section">
+                    <div class="section-header">
+                        <h2>Partecipanti</h2>
+                        <button id="btn-add-participant" class="btn btn-primary">
+                            <i class="fa-solid fa-user-plus"></i> Aggiungi
+                        </button>
+                    </div>
+
+                    <!-- Participants List/Grid -->
+                    <div class="participants-grid" id="participants-list">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- View 4: Saldi e Rimborsi -->
+                <section id="view-settlement" class="content-section">
+                    <div class="section-header">
+                        <h2>Saldi e Rimborsi</h2>
+                    </div>
+
+                    <div class="settlement-grid">
+                        <!-- Net Balances List -->
+                        <div class="card glass">
+                            <h3>Saldi Individuali</h3>
+                            <p class="sub-text mb-4">Differenza tra quanto pagato e la quota dovuta.</p>
+                            <div class="balances-list" id="balances-list">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- Debt Settle List (Calculated Transfers) -->
+                        <div class="card glass">
+                            <h3>Rimborsi Consigliati</h3>
+                            <p class="sub-text mb-4">Transazioni suggerite per azzerare tutti i debiti con il minor numero di scambi.</p>
+                            <div class="transfers-list" id="transfers-list">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+
+            <!-- Bottom Navigation Bar -->
+            <nav class="bottom-nav glass">
+                <button class="nav-item active" data-target="view-dashboard">
+                    <i class="fa-solid fa-chart-simple"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-target="view-transactions">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Spese</span>
+                </button>
+                <button class="nav-item" data-target="view-participants">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Persone</span>
+                </button>
+                <button class="nav-item" data-target="view-settlement">
+                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                    <span>Rimborsi</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- ================= MODALS ================= -->
+
+        <!-- Modal 1: Nuovo Viaggio / Impostazioni Viaggio -->
+        <div id="modal-trip" class="modal-overlay">
+            <div class="modal-card glass animate-slide-up">
+                <div class="modal-header">
+                    <h3 id="modal-trip-title">Nuovo Viaggio</h3>
+                    <button class="btn-close-modal"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <form id="form-trip">
+                    <input type="hidden" id="trip-id">
+                    <div class="form-group">
+                        <label for="trip-name">Nome del Viaggio</label>
+                        <input type="text" id="trip-name" required placeholder="Es. Road Trip Spagna, Capodanno a Parigi...">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <label for="trip-currency">Valuta Base del Viaggio</label>
+                            <select id="trip-currency">
+                                <option value="EUR">Euro (€)</option>
+                                <option value="USD">Dollaro Americano ($)</option>
+                                <option value="GBP">Sterlina Inglese (£)</option>
+                                <option value="CHF">Franco Svizzero (CHF)</option>
+                            </select>
+                        </div>
+                        <div class="form-group col">
+                            <label for="trip-budget">Budget Previsto (Opzionale)</label>
+                            <input type="number" id="trip-budget" min="0" placeholder="Es. 1000">
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary btn-close-modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Salva</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal 2: Aggiungi Partecipante -->
+        <div id="modal-participant" class="modal-overlay">
+            <div class="modal-card glass animate-slide-up">
+                <div class="modal-header">
+                    <h3>Aggiungi Partecipante</h3>
+                    <button class="btn-close-modal"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <form id="form-participant">
+                    <div class="form-group">
+                        <label for="participant-name">Nome Partecipante</label>
+                        <input type="text" id="participant-name" required placeholder="Es. Sofia, Marco, Alessia...">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary btn-close-modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Aggiungi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal 3: Aggiungi Spesa (Uscita) -->
+        <div id="modal-expense" class="modal-overlay">
+            <div class="modal-card glass animate-slide-up modal-large">
+                <div class="modal-header">
+                    <h3 id="modal-expense-title">Aggiungi Spesa</h3>
+                    <button class="btn-close-modal"><i class="fa-solid fa-times"></i></button>
+                </div>
+
+                <!-- OCR Receipt Scanner Section -->
+                <div class="ocr-section-box">
+                    <div class="ocr-upload-wrapper">
+                        <div class="ocr-drop-zone" id="ocr-drop-zone">
+                            <i class="fa-solid fa-camera-retro"></i>
+                            <div>
+                                <span class="ocr-title">Scansiona Scontrino (Carica o Scatta Foto)</span>
+                                <span class="ocr-subtitle">Estrae automaticamente importo, categoria e descrizione</span>
+                            </div>
+                            <input type="file" id="ocr-file-input" accept="image/*" capture="environment" class="hidden-input">
+                        </div>
+                        <div id="ocr-loading" class="ocr-loading-overlay" style="display: none;">
+                            <div class="ocr-spinner"></div>
+                            <div class="ocr-loading-text">
+                                <span id="ocr-progress-text">Inizializzazione scansione...</span>
+                                <span class="sub-text">Potrebbe richiedere qualche secondo</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="form-expense">
+                    <input type="hidden" id="expense-id">
+                    <div class="form-row">
+                        <div class="form-group col-2">
+                            <label for="expense-description">Descrizione Spesa</label>
+                            <input type="text" id="expense-description" required placeholder="Es. Cena di pesce, Biglietti museo, Benzina...">
+                        </div>
+                        <div class="form-group col">
+                            <label for="expense-category">Categoria</label>
+                            <select id="expense-category" required>
+                                <option value="Cibo">🍔 Cibo</option>
+                                <option value="Alloggio">🏨 Alloggio</option>
+                                <option value="Trasporti">🚗 Trasporti</option>
+                                <option value="Svago">🎭 Svago</option>
+                                <option value="Altro">📦 Altro</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <label for="expense-amount">Importo</label>
+                            <div class="input-currency-wrapper">
+                                <input type="number" id="expense-amount" step="0.01" min="0.01" required placeholder="0.00">
+                                <span class="currency-label" id="expense-amount-currency-label">EUR</span>
+                            </div>
+                        </div>
+                        <div class="form-group col">
+                            <label for="expense-currency">Valuta Spesa</label>
+                            <select id="expense-currency" required>
+                                <option value="EUR">Euro (€)</option>
+                                <option value="USD">Dollaro Americano ($)</option>
+                                <option value="GBP">Sterlina Inglese (£)</option>
+                                <option value="CHF">Franco Svizzero (CHF)</option>
+                            </select>
+                        </div>
+                        <div class="form-group col">
+                            <label for="expense-date">Data</label>
+                            <input type="date" id="expense-date" required>
+                        </div>
+                    </div>
+
+                    <!-- Exchange Rate Row (conditionally visible in JS) -->
+                    <div class="form-row" id="exchange-rate-row" style="display: none;">
+                        <div class="form-group col">
+                            <label for="expense-exchange-rate">Tasso di Cambio (1 Valuta Spesa = X Valuta Base)</label>
+                            <input type="number" id="expense-exchange-rate" step="0.0001" min="0.0001" placeholder="Es. 0.9200">
+                        </div>
+                        <div class="form-group col" style="display: flex; align-items: flex-end; padding-bottom: 1.2rem;">
+                            <span id="exchange-rate-preview" class="sub-text text-info font-bold">Importo convertito: 0,00 €</span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <label for="expense-payer">Pagato Da</label>
+                            <select id="expense-payer" required>
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Splits Selection -->
+                    <div class="form-group mt-3">
+                        <label>Diviso Tra (Destinatari della spesa)</label>
+                        <div class="split-options-header">
+                            <button type="button" id="btn-split-all" class="btn btn-sm btn-secondary">Seleziona Tutti</button>
+                            <button type="button" id="btn-split-none" class="btn btn-sm btn-secondary">Deseleziona Tutti</button>
+                        </div>
+                        <div class="split-participants-list" id="expense-splits-list">
+                            <!-- Checkboxes populated dynamically -->
+                        </div>
+                    </div>
+
+                    <div class="modal-actions mt-4">
+                        <button type="button" class="btn btn-secondary btn-close-modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Salva Spesa</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal 4: Aggiungi Entrata (Cassa Comune) -->
+        <div id="modal-income" class="modal-overlay">
+            <div class="modal-card glass animate-slide-up">
+                <div class="modal-header">
+                    <h3 id="modal-income-title">Aggiungi Versamento in Cassa</h3>
+                    <button class="btn-close-modal"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <form id="form-income">
+                    <input type="hidden" id="income-id">
+                    <div class="form-group">
+                        <label for="income-payer">Chi effettua il versamento?</label>
+                        <select id="income-payer" required>
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <label for="income-amount">Importo Versato</label>
+                            <div class="input-currency-wrapper">
+                                <input type="number" id="income-amount" step="0.01" min="0.01" required placeholder="0.00">
+                                <span class="currency-label" id="income-amount-currency-label">EUR</span>
+                            </div>
+                        </div>
+                        <div class="form-group col">
+                            <label for="income-date">Data</label>
+                            <input type="date" id="income-date" required>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary btn-close-modal">Annulla</button>
+                        <button type="submit" class="btn btn-success">Registra Versamento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal 5: Importa Viaggio (JSON) -->
+        <div id="modal-import" class="modal-overlay">
+            <div class="modal-card glass animate-slide-up">
+                <div class="modal-header">
+                    <h3>Importa Viaggio</h3>
+                    <button class="btn-close-modal"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <form id="form-import">
+                    <p class="sub-text text-center mb-3">
+                        <i class="fa-solid fa-circle-info text-info"></i> <strong>Nota sulla condivisione:</strong> I dati dell'app sono locali. Per lavorare in gruppo, esporta il file del viaggio (icona in alto a destra) e invialo ai partecipanti. Potranno caricarlo qui per vedere tutti gli aggiornamenti.
+                    </p>
+                    <div class="form-group">
+                        <label for="import-file-input">Seleziona il file JSON del viaggio</label>
+                        <div class="file-upload-area" id="drop-zone">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <p>Trascina il file qui o clicca per caricarlo</p>
+                            <input type="file" id="import-file-input" accept=".json" class="hidden-input">
+                        </div>
+                        <span id="import-filename" class="sub-text text-center mt-2 d-block"></span>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary btn-close-modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary" id="btn-confirm-import" disabled>Importa</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Application Script (ES Module) -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
