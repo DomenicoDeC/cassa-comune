@@ -22,6 +22,7 @@ import {
 
 import { saveTripToStorage, clearTripStorage, exportTripAsJSON, importTripFromJSON } from './storage.js';
 import { renderCategoryChart } from './charts.js';
+import { uploadTripToCloud, downloadTripFromCloud, generateInviteLink, generateQRCodeUrl, getJoinIdFromUrl, saveBlobId } from './sync.js';
 
 // --- CURRENCY UTILS ---
 const CURRENCY_SYMBOLS = {
@@ -92,6 +93,7 @@ const elements = {
     modalExpense: document.getElementById('modal-expense'),
     modalIncome: document.getElementById('modal-income'),
     modalImport: document.getElementById('modal-import'),
+    modalShare: document.getElementById('modal-share'),
     
     // Forms
     formTrip: document.getElementById('form-trip'),
@@ -1362,4 +1364,90 @@ export function bindUIEvents() {
             }
         });
     });
+
+    // --- 11. CLOUD SHARE LOGIC ---
+    const shareStatus = document.getElementById('share-status');
+    const shareContent = document.getElementById('share-content');
+    const shareLinkInput = document.getElementById('share-link-input');
+    const shareQrImg = document.getElementById('share-qr-img');
+    const btnCopyLink = document.getElementById('btn-copy-link');
+    const btnShareWhatsapp = document.getElementById('btn-share-whatsapp');
+    const btnShareNative = document.getElementById('btn-share-native');
+    const btnSyncUpdate = document.getElementById('btn-sync-update');
+
+    async function openShareModal() {
+        openModal(elements.modalShare);
+        shareStatus.style.display = 'block';
+        shareContent.style.display = 'none';
+        shareStatus.innerHTML = '<span class="spinner"></span> Caricamento dati nel cloud...';
+
+        try {
+            const tripData = JSON.parse(exportTripAsJSON());
+            const blobId = await uploadTripToCloud(tripData);
+            const link = generateInviteLink(blobId);
+
+            shareLinkInput.value = link;
+            shareQrImg.src = generateQRCodeUrl(link);
+
+            btnCopyLink.onclick = () => {
+                navigator.clipboard.writeText(link).then(() => showToast('Link copiato!', 'success'));
+            };
+            btnShareWhatsapp.onclick = () => {
+                window.open(`https://wa.me/?text=${encodeURIComponent('Unisciti al viaggio su Cassa Comune! ' + link)}`, '_blank');
+            };
+            btnShareNative.onclick = () => {
+                if (navigator.share) {
+                    navigator.share({ title: 'Cassa Comune', text: 'Unisciti al nostro viaggio!', url: link });
+                } else {
+                    navigator.clipboard.writeText(link).then(() => showToast('Link copiato negli appunti!', 'success'));
+                }
+            };
+            btnSyncUpdate.onclick = async () => {
+                btnSyncUpdate.disabled = true;
+                btnSyncUpdate.innerHTML = '<span class="spinner"></span> Aggiornamento...';
+                try {
+                    const data = JSON.parse(exportTripAsJSON());
+                    await uploadTripToCloud(data);
+                    showToast('Dati aggiornati nel cloud!', 'success');
+                } catch (err) {
+                    showToast('Errore aggiornamento: ' + err.message, 'error');
+                } finally {
+                    btnSyncUpdate.disabled = false;
+                    btnSyncUpdate.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Aggiorna dati nel cloud';
+                }
+            };
+
+            shareStatus.style.display = 'none';
+            shareContent.style.display = 'block';
+        } catch (err) {
+            shareStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-danger"></i> Errore: ${err.message}`;
+        }
+    }
+
+    elements.btnShareTrip.addEventListener('click', openShareModal);
+
+    // --- 12. JOIN FROM URL on app load ---
+    async function checkJoinUrl() {
+        const joinId = getJoinIdFromUrl();
+        if (!joinId) return;
+        try {
+            showToast('Caricamento viaggio condiviso...', 'info');
+            const tripData = await downloadTripFromCloud(joinId);
+            const success = importTripFromJSON(JSON.stringify(tripData));
+            if (success) {
+                saveBlobId(joinId);
+                // Remove ?join= from URL without reload
+                const url = new URL(window.location.href);
+                url.searchParams.delete('join');
+                window.history.replaceState({}, '', url);
+                showToast('Viaggio condiviso caricato!', 'success');
+                refreshAllViews();
+            }
+        } catch (err) {
+            showToast('Errore caricamento viaggio: ' + err.message, 'error');
+        }
+    }
+
+    // Run join check at startup
+    checkJoinUrl();
 }
