@@ -877,6 +877,8 @@ body {
 .modal-card {
     width: 100%;
     max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
     padding: 2rem;
     border-radius: var(--border-radius-lg);
     display: flex;
@@ -887,6 +889,76 @@ body {
 .modal-large {
     max-width: 650px;
 }
+
+/* Share Modal Styles */
+.share-link-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-sm);
+    padding: 0.75rem 1rem;
+}
+
+.share-link-box input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--color-text-primary);
+    font-size: 0.85rem;
+    outline: none;
+    font-family: monospace;
+    min-width: 0;
+}
+
+.share-link-box .btn-icon {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+}
+
+.share-qr {
+    display: flex;
+    justify-content: center;
+    padding: 1rem 0;
+}
+
+.share-qr img {
+    border-radius: var(--border-radius-sm);
+    width: 160px;
+    height: 160px;
+}
+
+.share-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.share-actions .btn {
+    flex: 1;
+}
+
+.share-status {
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+.share-status .spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(99,102,241,0.3);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .modal-header {
     display: flex;
