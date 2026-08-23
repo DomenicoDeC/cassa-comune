@@ -748,52 +748,6 @@ function updateExchangeRatePreview() {
     }
 }
 
-// --- SHARE TRIP METHOD ---
-function shareTrip() {
-    if (!state.trip.id) {
-        showToast("Nessun viaggio attivo da condividere", "error");
-        return;
-    }
-
-    const tripJson = JSON.stringify(state.trip, null, 2);
-    const fileName = `cassa_comune_${state.trip.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}.json`;
-    
-    if (navigator.share) {
-        try {
-            const file = new File([tripJson], fileName, { type: 'application/json' });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                navigator.share({
-                    files: [file],
-                    title: `Cassa Comune: ${state.trip.name}`,
-                    text: `Ecco i dati aggiornati del nostro viaggio "${state.trip.name}". Importa questo file nell'app!`
-                }).then(() => {
-                    showToast("Viaggio condiviso con successo!", "success");
-                }).catch(err => {
-                    if (err.name !== 'AbortError') {
-                        console.error("Share native error:", err);
-                        fallbackTextShare(tripJson);
-                    }
-                });
-            } else {
-                fallbackTextShare(tripJson);
-            }
-        } catch (e) {
-            console.error("File sharing API error:", e);
-            fallbackTextShare(tripJson);
-        }
-    } else {
-        fallbackTextShare(tripJson);
-    }
-}
-
-function fallbackTextShare(tripJson) {
-    navigator.clipboard.writeText(tripJson).then(() => {
-        showToast("Dati copiati negli appunti e file JSON scaricato. Invialo a chi vuoi!", "success");
-    }).catch(err => {
-        showToast("File JSON scaricato. Condividilo con i tuoi amici!", "info");
-    });
-    exportTripAsJSON();
-}
 
 // --- SETUP MODALS FOR EDIT ---
 function setupEditTransactionModal(txId) {
@@ -986,9 +940,7 @@ export function bindUIEvents() {
         showToast("Esportazione JSON completata", "success");
     });
 
-    elements.btnShareTrip.addEventListener('click', () => {
-        shareTrip();
-    });
+    // btn-share-trip is handled in section 11 (Cloud Share Logic)
 
     elements.btnCloseTrip.addEventListener('click', () => {
         if (confirm("Sei sicuro di voler chiudere e cancellare la sessione attiva del viaggio? Assicurati di aver esportato i dati se desideri conservarli.")) {
