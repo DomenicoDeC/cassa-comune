@@ -22,7 +22,50 @@ import {
 
 import { saveTripToStorage, clearTripStorage, exportTripAsJSON, importTripFromJSON } from './storage.js';
 import { renderCategoryChart } from './charts.js';
-import { uploadTripToCloud, downloadTripFromCloud, generateInviteLink, generateQRCodeUrl, getJoinIdFromUrl, saveBlobId } from './sync.js';
+import { saveTripToFirebase, loadTripFromFirebase, listenToTrip, stopListening, getInviteLink, generateQRCodeUrl, getTripIdFromUrl } from './sync.js';
+
+// --- SYNC STATE ---
+let _syncActive = false;   // il viaggio corrente è connesso a Firebase
+let _pushInProgress = false; // stiamo mandando dati → ignora il listener
+
+/** Invia i dati del viaggio attuale a Firebase (se sincronizzato) */
+export async function syncCurrentTrip() {
+    if (!_syncActive || !state.trip.id || _pushInProgress) return;
+    _pushInProgress = true;
+    try {
+        await saveTripToFirebase(state.trip);
+        updateSyncIndicator(true);
+    } catch(e) {
+        console.warn('Sync Firebase fallita:', e);
+        updateSyncIndicator(false);
+    } finally {
+        _pushInProgress = false;
+    }
+}
+
+/** Aggiorna il badge di sincronizzazione nell'header */
+function updateSyncIndicator(online) {
+    const dot = document.getElementById('sync-dot');
+    if (!dot) return;
+    dot.style.background = online ? '#10b981' : '#ef4444';
+    dot.title = online ? 'Sincronizzato' : 'Non sincronizzato';
+}
+
+/** Avvia il listener in tempo reale per un viaggio Firebase */
+function startRealtimeSync(tripId) {
+    _syncActive = true;
+    updateSyncIndicator(true);
+    listenToTrip(tripId, (remoteTrip) => {
+        if (_pushInProgress) return; // stiamo inviando noi → ignora
+        // Applica dati remoti
+        _pushInProgress = true; // blocca l'invio durante l'applicazione
+        Object.assign(state.trip, remoteTrip);
+        saveTripToStorage();
+        _pushInProgress = false;
+        refreshAllViews();
+        showToast('🔄 Aggiornamento ricevuto', 'info');
+    });
+}
 
 // --- CURRENCY UTILS ---
 const CURRENCY_SYMBOLS = {
@@ -1097,6 +1140,7 @@ export function bindUIEvents() {
         }
 
         saveTripToStorage();
+        syncCurrentTrip();
         closeAllModals();
         refreshAllViews();
     });
@@ -1113,6 +1157,7 @@ export function bindUIEvents() {
 
         addParticipant(name);
         saveTripToStorage();
+        syncCurrentTrip();
         closeAllModals();
         showToast(`Aggiunto ${name}`, "success");
         refreshAllViews();
@@ -1193,6 +1238,7 @@ export function bindUIEvents() {
         }
 
         saveTripToStorage();
+        syncCurrentTrip();
         closeAllModals();
         refreshAllViews();
     });
@@ -1230,6 +1276,7 @@ export function bindUIEvents() {
         }
 
         saveTripToStorage();
+        syncCurrentTrip();
         closeAllModals();
         refreshAllViews();
     });
@@ -1308,16 +1355,13 @@ export function bindUIEvents() {
         });
     });
 
-    // Close on click outside card
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal(modal);
-            }
+            if (e.target === modal) closeModal(modal);
         });
     });
 
-    // --- 11. CLOUD SHARE LOGIC ---
+    // --- 11. CLOUD SHARE LOGIC (Firebase) ---
     const shareStatus = document.getElementById('share-status');
     const shareContent = document.getElementById('share-content');
     const shareLinkInput = document.getElementById('share-link-input');
@@ -1335,75 +1379,78 @@ export function bindUIEvents() {
         openModal(elements.modalShare);
         shareStatus.style.display = 'block';
         shareContent.style.display = 'none';
-        shareStatus.innerHTML = '<span class="spinner"></span> Caricamento dati nel cloud...';
+        shareStatus.innerHTML = '<span class="spinner"></span> Caricamento su Firebase...';
 
         try {
-            const tripData = JSON.parse(JSON.stringify(state.trip));
-            const blobId = await uploadTripToCloud(tripData);
-            const link = generateInviteLink(blobId);
+            await saveTripToFirebase(state.trip);
+            startRealtimeSync(state.trip.id);
+            const link = getInviteLink(state.trip.id);
 
             shareLinkInput.value = link;
             shareQrImg.src = generateQRCodeUrl(link);
 
             btnCopyLink.onclick = () => {
-                navigator.clipboard.writeText(link).then(() => showToast('Link copiato!', 'success'));
+                navigator.clipboard.writeText(link)
+                    .then(() => showToast('Link copiato!', 'success'))
+                    .catch(() => { shareLinkInput.select(); document.execCommand('copy'); showToast('Link copiato!', 'success'); });
             };
             btnShareWhatsapp.onclick = () => {
-                window.open(`https://wa.me/?text=${encodeURIComponent('Unisciti al viaggio su Cassa Comune! ' + link)}`, '_blank');
+                const text = encodeURIComponent(`Unisciti al viaggio "${state.trip.name}" su Cassa Comune! ${link}`);
+                window.open(`https://wa.me/?text=${text}`, '_blank');
             };
             btnShareNative.onclick = () => {
                 if (navigator.share) {
-                    navigator.share({ title: 'Cassa Comune', text: 'Unisciti al nostro viaggio!', url: link });
+                    navigator.share({ title: `Cassa Comune: ${state.trip.name}`, text: 'Unisciti al nostro viaggio!', url: link });
                 } else {
-                    navigator.clipboard.writeText(link).then(() => showToast('Link copiato negli appunti!', 'success'));
+                    navigator.clipboard.writeText(link).then(() => showToast('Link copiato!', 'success'));
                 }
             };
             btnSyncUpdate.onclick = async () => {
                 btnSyncUpdate.disabled = true;
-                btnSyncUpdate.innerHTML = '<span class="spinner"></span> Aggiornamento...';
+                btnSyncUpdate.innerHTML = '<span class="spinner"></span> Sincronizzazione...';
                 try {
-                    const data = JSON.parse(JSON.stringify(state.trip));
-                    await uploadTripToCloud(data);
-                    showToast('Dati aggiornati nel cloud!', 'success');
-                } catch (err) {
-                    showToast('Errore aggiornamento: ' + err.message, 'error');
+                    await saveTripToFirebase(state.trip);
+                    showToast('Dati sincronizzati nel cloud!', 'success');
+                } catch(e) {
+                    showToast('Errore sync: ' + e.message, 'error');
                 } finally {
                     btnSyncUpdate.disabled = false;
-                    btnSyncUpdate.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Aggiorna dati nel cloud';
+                    btnSyncUpdate.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Sincronizza ora';
                 }
             };
 
             shareStatus.style.display = 'none';
             shareContent.style.display = 'block';
-        } catch (err) {
+        } catch(err) {
             shareStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-danger"></i> Errore: ${err.message}`;
         }
     }
 
     elements.btnShareTrip.addEventListener('click', openShareModal);
 
-    // --- 12. JOIN FROM URL on app load ---
+    // --- 12. JOIN FROM URL (?trip=TRIP_ID) ---
     async function checkJoinUrl() {
-        const joinId = getJoinIdFromUrl();
-        if (!joinId) return;
+        const tripId = getTripIdFromUrl();
+        if (!tripId) return;
+
+        showToast('⬇️ Caricamento viaggio condiviso...', 'info');
         try {
-            showToast('Caricamento viaggio condiviso...', 'info');
-            const tripData = await downloadTripFromCloud(joinId);
+            const tripData = await loadTripFromFirebase(tripId);
             const success = importTripFromJSON(JSON.stringify(tripData));
             if (success) {
-                saveBlobId(joinId);
-                // Remove ?join= from URL without reload
+                // Pulisce il parametro dall'URL
                 const url = new URL(window.location.href);
-                url.searchParams.delete('join');
+                url.searchParams.delete('trip');
                 window.history.replaceState({}, '', url);
-                showToast('Viaggio condiviso caricato!', 'success');
+                // Avvia il listener in tempo reale
+                startRealtimeSync(tripId);
+                showToast('✅ Viaggio condiviso caricato! Sincronizzazione attiva.', 'success');
                 refreshAllViews();
             }
-        } catch (err) {
-            showToast('Errore caricamento viaggio: ' + err.message, 'error');
+        } catch(err) {
+            showToast('Errore caricamento: ' + err.message, 'error');
         }
     }
 
-    // Run join check at startup
     checkJoinUrl();
 }
