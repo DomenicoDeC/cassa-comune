@@ -1328,13 +1328,17 @@ export function bindUIEvents() {
     const btnSyncUpdate = document.getElementById('btn-sync-update');
 
     async function openShareModal() {
+        if (!state.trip.id) {
+            showToast('Nessun viaggio attivo da condividere', 'error');
+            return;
+        }
         openModal(elements.modalShare);
         shareStatus.style.display = 'block';
         shareContent.style.display = 'none';
         shareStatus.innerHTML = '<span class="spinner"></span> Caricamento dati nel cloud...';
 
         try {
-            const tripData = JSON.parse(exportTripAsJSON());
+            const tripData = JSON.parse(JSON.stringify(state.trip));
             const blobId = await uploadTripToCloud(tripData);
             const link = generateInviteLink(blobId);
 
@@ -1358,7 +1362,7 @@ export function bindUIEvents() {
                 btnSyncUpdate.disabled = true;
                 btnSyncUpdate.innerHTML = '<span class="spinner"></span> Aggiornamento...';
                 try {
-                    const data = JSON.parse(exportTripAsJSON());
+                    const data = JSON.parse(JSON.stringify(state.trip));
                     await uploadTripToCloud(data);
                     showToast('Dati aggiornati nel cloud!', 'success');
                 } catch (err) {
