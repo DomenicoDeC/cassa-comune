@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cassa Comune — Sei stato invitato!</title>
+    <meta name="description" content="Sei stato invitato a partecipare a un viaggio su Cassa Comune. Accedi subito per vedere e gestire le spese condivise.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #0f1623;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background-image:
+                radial-gradient(ellipse at 20% 20%, rgba(99,102,241,0.15) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.1) 0%, transparent 60%);
+        }
+
+        .card {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .app-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            box-shadow: 0 8px 20px rgba(99,102,241,0.4);
+        }
+
+        .app-title { font-size: 1.6rem; font-weight: 700; }
+        .app-subtitle { font-size: 0.85rem; color: #94a3b8; }
+
+        .invite-banner {
+            background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1));
+            border: 1px solid rgba(99,102,241,0.3);
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .invite-banner .tag {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #a5b4fc;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .trip-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.75rem;
+        }
+
+        .trip-stats {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+
+        .trip-stat {
+            text-align: center;
+        }
+
+        .trip-stat .val {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #a5b4fc;
+        }
+
+        .trip-stat .lbl {
+            font-size: 0.72rem;
+            color: #64748b;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 1rem 0;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px; height: 16px;
+            border: 2px solid rgba(99,102,241,0.3);
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            padding: 0.9rem 1.5rem;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn:active { transform: scale(0.97); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(99,102,241,0.35);
+        }
+
+        .btn-primary:hover { box-shadow: 0 8px 25px rgba(99,102,241,0.5); }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e2e8f0;
+        }
+
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+
+        .divider {
+            text-align: center;
+            color: #475569;
+            font-size: 0.8rem;
+            margin: 0.25rem 0;
+        }
+
+        .footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #334155;
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 1rem 0;
+            color: #ef4444;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header">
+            <div class="app-logo">✈️</div>
+            <div>
+                <div class="app-title">Cassa Comune</div>
+                <div class="app-subtitle">Spese condivise di viaggio</div>
+            </div>
+        </div>
+
+        <!-- Loading state -->
+        <div id="loading-state" class="loading-state">
+            <span class="spinner"></span> Caricamento viaggio...
+        </div>
+
+        <!-- Trip info (shown when loaded) -->
+        <div id="trip-info" class="invite-banner" style="display:none;">
+            <div class="tag">✉️ Sei stato invitato</div>
+            <div class="trip-name" id="trip-name-display">—</div>
+            <div class="trip-stats">
+                <div class="trip-stat">
+                    <div class="val" id="trip-participants">—</div>
+                    <div class="lbl">Partecipanti</div>
+                </div>
+                <div class="trip-stat">
+                    <div class="val" id="trip-expenses">—</div>
+                    <div class="lbl">Spese</div>
+                </div>
+                <div class="trip-stat">
+                    <div class="val" id="trip-currency">—</div>
+                    <div class="lbl">Valuta</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error state -->
+        <div id="error-state" class="error-state" style="display:none;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="error-msg">Viaggio non trovato.</span>
+        </div>
+
+        <div class="actions" id="actions" style="display:none;">
+            <!-- Opens the web app directly with the trip -->
+            <a id="btn-open-web" href="#" class="btn btn-primary">
+                <i class="fa-solid fa-globe"></i> Apri nel browser
+            </a>
+            <div class="divider">oppure</div>
+            <!-- Download APK -->
+            <a href="https://github.com/DomenicoDeC/cassa-comune/raw/main/CassaComune.apk"
+               class="btn btn-secondary" download>
+                <i class="fa-brands fa-android"></i> Scarica l'app Android
+            </a>
+        </div>
+
+        <!-- If no trip ID in URL, just show open buttons -->
+        <div class="actions" id="no-trip-actions" style="display:none;">
+            <a href="https://domenicodec.github.io/cassa-comune/" class="btn btn-primary">
+                <i class="fa-solid fa-globe"></i> Apri Cassa Comune
+            </a>
+            <a href="https://github.com/DomenicoDeC/cassa-comune/raw/main/CassaComune.apk"
+               class="btn btn-secondary" download>
+                <i class="fa-brands fa-android"></i> Scarica l'app Android
+            </a>
+        </div>
+    </div>
+
+    <div class="footer">Cassa Comune &copy; 2024 — Gratuito, senza pubblicità</div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCWpokbotFLAomlCDnPcIRZ59ZoFWhjzJU",
+            authDomain: "cassa-comune-f24e6.firebaseapp.com",
+            databaseURL: "https://cassa-comune-f24e6-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "cassa-comune-f24e6",
+            storageBucket: "cassa-comune-f24e6.firebasestorage.app",
+            messagingSenderId: "248792259520",
+            appId: "1:248792259520:web:f006b41ed2404feaf20625"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const tripId = new URLSearchParams(window.location.search).get('trip');
+        const appBase = 'https://domenicodec.github.io/cassa-comune/';
+
+        const loadingEl = document.getElementById('loading-state');
+        const tripInfoEl = document.getElementById('trip-info');
+        const errorEl = document.getElementById('error-state');
+        const actionsEl = document.getElementById('actions');
+        const noTripActionsEl = document.getElementById('no-trip-actions');
+
+        if (!tripId) {
+            loadingEl.style.display = 'none';
+            noTripActionsEl.style.display = 'flex';
+        } else {
+            document.getElementById('btn-open-web').href = `${appBase}?trip=${tripId}`;
+
+            get(ref(db, `trips/${tripId}`)).then(snapshot => {
+                loadingEl.style.display = 'none';
+                if (!snapshot.exists()) {
+                    errorEl.style.display = 'block';
+                    document.getElementById('error-msg').textContent = 'Viaggio non trovato. Controlla il link ricevuto.';
+                    return;
+                }
+                const trip = snapshot.val();
+                document.getElementById('trip-name-display').textContent = trip.name || 'Viaggio';
+                document.getElementById('trip-participants').textContent = (trip.participants || []).length;
+                document.getElementById('trip-expenses').textContent = (trip.transactions || []).filter(t => t.type === 'expense').length;
+                document.getElementById('trip-currency').textContent = trip.currency || '—';
+                tripInfoEl.style.display = 'block';
+                actionsEl.style.display = 'flex';
+            }).catch(err => {
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+                document.getElementById('error-msg').textContent = 'Errore: ' + err.message;
+            });
+        }
+    </script>
+</body>
+</html>
