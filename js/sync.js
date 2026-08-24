@@ -17,6 +17,8 @@ const firebaseConfig = {
 };
 
 const APP_URL = 'https://domenicodec.github.io/cassa-comune/';
+const LANDING_URL = 'https://domenicodec.github.io/cassa-comune/landing.html';
+
 
 let _app = null;
 let _db = null;
@@ -98,7 +100,7 @@ export function stopListening() {
  * Genera il link di invito pubblico per un viaggio
  */
 export function getInviteLink(tripId) {
-    return `${APP_URL}?trip=${tripId}`;
+    return `${LANDING_URL}?trip=${tripId}`;
 }
 
 /**
