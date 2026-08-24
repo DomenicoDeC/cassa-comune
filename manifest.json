@@ -1,0 +1,37 @@
+{
+  "name": "Cassa Comune",
+  "short_name": "Cassa Comune",
+  "description": "Gestisci e dividi le spese di viaggio senza pensieri",
+  "start_url": "/cassa-comune/",
+  "scope": "/cassa-comune/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1623",
+  "theme_color": "#6366f1",
+  "lang": "it",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nuovo Viaggio",
+      "short_name": "Nuovo",
+      "description": "Crea un nuovo viaggio",
+      "url": "/cassa-comune/",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [],
+  "categories": ["finance", "travel", "utilities"]
+}
