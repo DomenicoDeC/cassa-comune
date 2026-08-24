@@ -15,5 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Render the correct screen
     refreshAllViews();
     
+    // 4. Register Service Worker (PWA)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/cassa-comune/sw.js')
+            .then(() => console.log('Service Worker registrato ✅'))
+            .catch(e => console.warn('SW registration failed:', e));
+    }
+
     console.log(`Cassa Comune initialized. Trip loaded: ${hasActiveTrip}`);
 });
