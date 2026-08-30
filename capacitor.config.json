@@ -1,0 +1,13 @@
+{
+  "appId": "com.cassacomune.app",
+  "appName": "Cassa Comune",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}
